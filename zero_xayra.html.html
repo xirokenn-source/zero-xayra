@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>ZERO-XAYRA · CARTOON CYBERPUNK</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Syne:wght@700;800&family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@500;800&display=swap" rel="stylesheet">
+<style>
+/* ----------------------------------------------------
+   CSS VARIABLES & THEME ENGINE
+---------------------------------------------------- */
+:root {
+  --hue: 350;
+  --a: hsl(var(--hue), 100%, 55%);
+  --a-glow: color-mix(in srgb, var(--a) 75%, transparent);
+  --a-dark: color-mix(in srgb, var(--a) 25%, #000);
+  --bg: #07060b;
+  --panel: rgba(18, 14, 26, 0.85);
+  --panel-border: color-mix(in srgb, var(--a) 40%, #000);
+  --ink: #ffffff;
+  --sub: #9ea0b8;
+  --ok: #00ff88;
+  --warn: #ffbb00;
+  --radius: 16px;
+  --stroke: 3px;
+  --speed: 1s;
+  --glow-power: 1;
+  --f-head: 'Orbitron', 'Syne', sans-serif;
+  --f-body: 'Inter', system-ui, sans-serif;
+  --f-mono: 'JetBrains Mono', monospace;
+}
+
+[data-theme="green"] { --hue: 145; }
+[data-theme="purple"] { --hue: 275; }
+[data-theme="yellow"] { --hue: 48; }
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; user-select: none; }
+html, body { height: 100%; background: var(--bg); color: var(--ink); font-family: var(--f-body); overflow: hidden; }
+
+/* ----------------------------------------------------
+   ANIMATED BACKGROUND & SCANLINES
+---------------------------------------------------- */
+#bg-canvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.6; }
+.scanlines {
+  position: fixed; inset: 0; z-index: 70; pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgba(0,0,0,0) 0px, rgba(0,0,0,0) 2px, rgba(0, 0, 0, 0.35) 3px, rgba(0, 0, 0, 0.35) 4px);
+}
+
+/* ----------------------------------------------------
+   CARTOON CYBERPUNK BASE STYLES
+---------------------------------------------------- */
+.cyber-box {
+  background: var(--panel);
+  border: var(--stroke) solid #000;
+  box-shadow: 4px 4px 0px #000, 0 0 calc(var(--glow-power) * 16px) var(--a-glow);
+  border-radius: var(--radius);
+  position: relative;
+  backdrop-filter: blur(12px);
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+.glitch-text {
+  font-family: var(--f-head);
+  font-weight: 900;
+  text-transform: uppercase;
+  position: relative;
+  display: inline-block;
+  color: #fff;
+  text-shadow: 3px 3px 0px #000, -2px -2px 0px var(--a);
+}
+
+/* ----------------------------------------------------
+   LAYOUT & CONTAINER
+---------------------------------------------------- */
+#app {
+  position: relative; z-index: 2;
+  max-width: 480px; margin: 0 auto; height: 100%;
+  display: flex; flex-direction: column;
+}
+
+header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: calc(12px + env(safe-area-inset-top, 0px)) 16px 12px;
+  background: rgba(7, 6, 11, 0.9);
+  border-bottom: var(--stroke) solid #000;
+  position: relative; z-index: 10;
+}
+
+.logo-group { display: flex; flex-direction: column; }
+.logo-title { font-size: 20px; letter-spacing: 1px; }
+.logo-sub { font-size: 9px; font-family: var(--f-mono); color: var(--a); font-weight: 800; letter-spacing: 2px; }
+
+.header-right { display: flex; align-items: center; gap: 10px; }
+.bal-badge {
+  display: flex; align-items: center; gap: 6px;
+  background: #000; border: 2px solid var(--a);
+  padding: 6px 14px; border-radius: 99px; font-family: var(--f-head);
+  font-weight: 800; font-size: 13px; color: #fff;
+  box-shadow: inset 0 0 8px var(--a-glow);
+}
+.bal-icon { color: var(--a); animation: spinStar 6s linear infinite; }
+@keyframes spinStar { 100% { transform: rotate(360deg); } }
+
+main {
+  flex: 1; overflow-y: auto; padding: 16px 16px 110px;
+  scroll-behavior: smooth;
+}
+
+section { display: none; }
+section.active { display: block; animation: sectionIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+@keyframes sectionIn { from { opacity: 0; transform: translateY(16px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+/* ----------------------------------------------------
+   BUTTON STYLES & CYBER ANIMATIONS
+---------------------------------------------------- */
+.cyber-btn {
+  appearance: none; border: var(--stroke) solid #000;
+  background: var(--a); color: #000;
+  font-family: var(--f-head); font-weight: 900;
+  padding: 14px 20px; border-radius: var(--radius);
+  box-shadow: 4px 4px 0px #000;
+  cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+  gap: 8px; text-transform: uppercase; font-size: 13px; letter-spacing: 1px;
+  position: relative; overflow: hidden; transition: all 0.1s ease;
+}
+.cyber-btn:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0px #000; }
+.cyber-btn.outline { background: transparent; color: #fff; border-color: var(--a); box-shadow: 4px 4px 0px var(--a-dark); }
+.cyber-btn.full { width: 100%; }
+
+/* Custom Preset Animations */
+.anim-pulse { animation: cyberPulse calc(1.5s / var(--speed)) infinite ease-in-out; }
+@keyframes cyberPulse { 0%, 100% { box-shadow: 4px 4px 0px #000, 0 0 5px var(--a); } 50% { box-shadow: 4px 4px 0px #000, 0 0 25px var(--a); transform: scale(1.02); } }
+
+.anim-shake { animation: cyberShake calc(2s / var(--speed)) infinite; }
+@keyframes cyberShake { 0%, 90%, 100% { transform: translate(0, 0); } 92% { transform: translate(-3px, 2px); } 94% { transform: translate(3px, -2px); } 96% { transform: translate(-2px, -2px); } }
+
+.anim-rainbow { animation: rainbowGlow calc(3s / var(--speed)) infinite linear; }
+@keyframes rainbowGlow { 0% { filter: hue-rotate(0deg); } 100% { filter: hue-rotate(360deg); } }
+
+.anim-glitch { animation: glitchPop calc(1.8s / var(--speed)) infinite steps(2); }
+@keyframes glitchPop { 0% { clip-path: inset(0 0 0 0); } 90% { clip-path: inset(10% 0 80% 0); transform: skew(4deg); } 95% { clip-path: inset(60% 0 10% 0); transform: skew(-4deg); } 100% { clip-path: inset(0 0 0 0); } }
+
+.anim-zoom { animation: zoomBlast calc(2.2s / var(--speed)) infinite alternate cubic-bezier(0.4, 0, 0.2, 1); }
+@keyframes zoomBlast { 0% { transform: scale(0.97); } 100% { transform: scale(1.05); } }
+
+/* ----------------------------------------------------
+   UI CARDS & SECTIONS
+---------------------------------------------------- */
+.hero-card {
+  text-align: center; padding: 24px 18px; margin-bottom: 20px;
+  background: linear-gradient(180deg, rgba(20, 15, 30, 0.9), rgba(10, 8, 16, 0.95));
+}
+.hero-title { font-size: 26px; margin-bottom: 8px; line-height: 1.1; }
+.hero-desc { font-size: 13px; color: var(--sub); margin-bottom: 18px; line-height: 1.5; }
+
+.section-title {
+  font-family: var(--f-head); font-size: 16px; text-transform: uppercase;
+  margin: 20px 0 12px; display: flex; align-items: center; gap: 8px;
+}
+.section-title::before { content: ''; display: inline-block; width: 6px; height: 16px; background: var(--a); border-radius: 2px; }
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+.stat-box {
+  padding: 14px; text-align: center; border-radius: 12px; background: #0c0914; border: 2px solid #1a162b;
+}
+.stat-val { font-family: var(--f-head); font-size: 20px; color: var(--a); font-weight: 800; }
+.stat-lbl { font-size: 10px; color: var(--sub); text-transform: uppercase; margin-top: 4px; font-weight: 700; }
+
+/* ----------------------------------------------------
+   FORMS & INPUTS
+---------------------------------------------------- */
+.form-group { margin-bottom: 14px; text-align: left; }
+.form-group label { display: block; font-size: 11px; font-weight: 700; color: var(--sub); text-transform: uppercase; margin-bottom: 6px; }
+.cyber-input, .cyber-select {
+  width: 100%; background: #06040a; border: 2px solid var(--panel-border);
+  color: #fff; padding: 12px 14px; border-radius: 10px; font-family: var(--f-body);
+  font-size: 13px; outline: none; transition: border-color 0.2s;
+}
+.cyber-input:focus, .cyber-select:focus { border-color: var(--a); box-shadow: 0 0 10px var(--a-glow); }
+
+/* Range Slider */
+input[type=range] {
+  width: 100%; -webkit-appearance: none; background: #151022; height: 8px; border-radius: 4px; outline: none;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: var(--a); border: 2px solid #000; cursor: pointer; box-shadow: 0 0 10px var(--a);
+}
+
+/* ----------------------------------------------------
+   NAVIGATION BAR
+---------------------------------------------------- */
+nav {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 60;
+  background: rgba(7, 6, 11, 0.95); border-top: var(--stroke) solid #000;
+  padding-bottom: env(safe-area-inset-bottom, 0px); backdrop-filter: blur(16px);
+}
+.nav-inner { display: flex; max-width: 480px; margin: 0 auto; }
+.nav-btn {
+  flex: 1; background: none; border: 0; color: var(--sub); padding: 12px 4px 10px;
+  font-family: var(--f-head); font-size: 10px; font-weight: 700;
+  display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer;
+  transition: color 0.15s ease, transform 0.15s ease;
+}
+.nav-btn svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 2; }
+.nav-btn.active { color: var(--a); transform: translateY(-2px); }
+.nav-btn.active svg { filter: drop-shadow(0 0 6px var(--a)); }
+
+/* ----------------------------------------------------
+   TOAST & OVERLAY
+---------------------------------------------------- */
+#toast {
+  position: fixed; top: calc(70px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%) translateY(-20px);
+  background: #000; border: 2px solid var(--a); padding: 10px 18px; border-radius: 99px;
+  color: #fff; font-family: var(--f-head); font-size: 12px; font-weight: 700;
+  z-index: 100; opacity: 0; pointer-events: none; transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 0 20px var(--a-glow); display: flex; align-items: center; gap: 8px;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* Splash Screen */
+#splash {
+  position: fixed; inset: 0; z-index: 200; background: #040306;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  transition: opacity 0.4s ease;
+}
+.loader-cyber {
+  width: 60px; height: 60px; border: 4px solid #1a1528; border-top-color: var(--a);
+  border-radius: 50%; animation: spin 0.8s linear infinite; box-shadow: 0 0 20px var(--a-glow);
+}
+@keyframes spin { 100% { transform: rotate(360deg); } }
+
+/* Dynamic Zone Render Placement */
+.pos-top { margin-bottom: 16px; }
+.pos-center { margin: 16px 0; }
+.pos-bottom { margin-top: 16px; }
+</style>
+</head>
+<body data-theme="red">
+<canvas id="bg-canvas"></canvas>
+<div class="scanlines"></div>
+
+<!-- Splash Screen -->
+<div id="splash">
+  <div class="loader-cyber"></div>
+  <div class="glitch-text" style="font-size:24px; margin-top:20px;">ZERO-XAYRA</div>
+  <div style="font-family:var(--f-mono); font-size:11px; color:var(--a); margin-top:8px;">BOOTING CYBER SYSTEM...</div>
+</div>
+
+<div id="toast"><span id="toast-icon">⚡</span> <span id="toast-msg">SYSTEM OK</span></div>
+
+<div id="app">
+  <header>
+    <div class="logo-group">
+      <div class="logo-title glitch-text" id="site-logo">ZERO-XAYRA</div>
+      <div class="logo-sub" id="site-sub">CYBERPUNK ENGINE</div>
+    </div>
+    <div class="header-right">
+      <div class="bal-badge">
+        <span class="bal-icon">★</span>
+        <span id="user-bal">1,337</span>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- HOME SECTION -->
+    <section id="sec-home" class="active">
+      <div class="cyber-box hero-card">
+        <div class="glitch-text hero-title" id="banner-title">ГАРАНТ СДЕЛОК</div>
+        <div class="hero-desc" id="banner-desc">Безопасный обмен NFT и юзернеймами. Бот выступает гарантом.</div>
+        <div class="grid-2">
+          <button class="cyber-btn anim-pulse" onclick="switchTab('sec-builder')">Создать Оффер</button>
+          <button class="cyber-btn outline anim-shake" onclick="triggerAudio('success'); toast('Демо Звук!');">Тест</button>
+        </div>
+      </div>
+
+      <div class="grid-3" style="margin-bottom: 20px;">
+        <div class="stat-box">
+          <div class="stat-val" id="stat-created">3</div>
+          <div class="stat-lbl">Сделок</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="stat-sound">ON</div>
+          <div class="stat-lbl">Звук</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="stat-status">VIP</div>
+          <div class="stat-lbl">Статус</div>
+        </div>
+      </div>
+
+      <div class="section-title">Быстрая Сделка</div>
+      <div class="cyber-box" style="padding: 16px;">
+        <div class="form-group">
+          <label>Название и Номер NFT</label>
+          <input type="text" id="offer-name" class="cyber-input" placeholder="Name#Number (например, JesterHat#52207)">
+        </div>
+        <div class="form-group">
+          <label>Сумма в ★</label>
+          <input type="number" id="offer-amount" class="cyber-input" placeholder="100">
+        </div>
+        <button class="cyber-btn full anim-pulse" onclick="createOffer()">Создать Оффер</button>
+      </div>
+
+      <div class="section-title">Как это работает</div>
+      <div class="cyber-box" style="padding: 16px;">
+        <div style="margin-bottom: 10px;"><b>1.</b> Вы создаете оффер.</div>
+        <div style="margin-bottom: 10px;"><b>2.</b> Покупатель вносит ★.</div>
+        <div style="margin-bottom: 10px;"><b>3.</b> Вы передаете NFT.</div>
+        <div><b>4.</b> Покупатель подтверждает — вы получаете оплату.</div>
+      </div>
+    </section>
+
+    <!-- BUILDER SECTION -->
+    <section id="sec-builder">
+      <div class="section-title">Создать Оффер</div>
+      <div class="cyber-box" style="padding: 16px;">
+        <div class="form-group">
+          <label>Название и Номер NFT</label>
+          <input type="text" id="offer-name-2" class="cyber-input" placeholder="Name#Number">
+        </div>
+        <div class="form-group">
+          <label>Сумма в ★</label>
+          <input type="number" id="offer-amount-2" class="cyber-input" placeholder="100">
+        </div>
+        <button class="cyber-btn full anim-pulse" onclick="createOffer()">Создать Оффер</button>
+      </div>
+    </section>
+
+    <!-- PROFILE SECTION -->
+    <section id="sec-profile">
+      <div class="section-title">Профиль Telegram</div>
+      <div class="cyber-box" style="padding: 20px; text-align: center;">
+        <div id="tg-avatar" style="width: 72px; height: 72px; border-radius: 50%; border: 3px solid var(--a); margin: 0 auto 12px; background: #000 center/cover; box-shadow: 0 0 15px var(--a-glow);"></div>
+        <div class="glitch-text" id="tg-name" style="font-size: 18px;">GUEST USER</div>
+        <div style="font-family: var(--f-mono); font-size: 12px; color: var(--a); margin-top: 4px;" id="tg-username">@guest</div>
+        <div style="font-size: 11px; color: var(--sub); margin-top: 2px;" id="tg-id">ID: 000000000</div>
+
+        <div style="margin-top: 20px;" class="grid-2">
+          <button class="cyber-btn outline" onclick="buyVip()">VIP Статус (500 ★)</button>
+          <button class="cyber-btn" onclick="addDemoBalance()">+500 ★</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- STYLE SECTION -->
+    <section id="sec-style">
+      <div class="section-title">Настройки и Стиль</div>
+      <div class="cyber-box" style="padding: 16px;">
+        <div class="form-group">
+          <label>Тема Оформления</label>
+          <div class="grid-2">
+            <button class="cyber-btn s" style="background:#ff0033; color:#fff;" onclick="setTheme('red')">Красная (Def)</button>
+            <button class="cyber-btn s" style="background:#00ff88; color:#000;" onclick="setTheme('green')">Зеленая</button>
+            <button class="cyber-btn s" style="background:#a855ff; color:#fff;" onclick="setTheme('purple')">Фиолет</button>
+            <button class="cyber-btn s" style="background:#ffbb00; color:#000;" onclick="setTheme('yellow')">Желтая</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Скорость Анимаций (<span id="speed-val">1.0</span>x)</label>
+          <input type="range" id="rng-speed" min="0.5" max="2.5" step="0.1" value="1.0" oninput="updateSpeed(this.value)">
+        </div>
+
+        <div class="form-group">
+          <label>Сила Неонового Свечения (<span id="glow-val">1.0</span>x)</label>
+          <input type="range" id="rng-glow" min="0.2" max="2.0" step="0.1" value="1.0" oninput="updateGlow(this.value)">
+        </div>
+
+        <div class="form-group">
+          <button class="cyber-btn outline full" onclick="toggleAudioState()">
+            Звуковые Эффекты: <span id="lbl-audio-state">ВКЛ</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ADMIN PANEL SECTION (Hidden by default) -->
+    <section id="sec-admin">
+      <div class="section-title">Админ-Панель Владельца</div>
+      <div class="cyber-box" style="padding: 16px;">
+        <div style="font-size: 12px; color: var(--ok); font-family: var(--f-mono); margin-bottom: 12px;">✔ ДОСТУП АДМИНИСТРАТОРА АКТИВЕН</div>
+        
+        <div class="form-group">
+          <label>Название Приложения</label>
+          <input type="text" id="adm-title" class="cyber-input" value="ZERO-XAYRA">
+        </div>
+
+        <div class="form-group">
+          <label>Главный Заголовок</label>
+          <input type="text" id="adm-banner" class="cyber-input" value="ГАРАНТ СДЕЛОК">
+        </div>
+
+        <div class="form-group">
+          <label>Описание Баннера</label>
+          <input type="text" id="adm-desc" class="cyber-input" value="Безопасный обмен NFT и юзернеймами...">
+        </div>
+
+        <button class="cyber-btn full anim-pulse" onclick="saveAdminSettings()">Сохранить Изменения</button>
+      </div>
+    </section>
+  </main>
+
+  <nav>
+    <div class="nav-inner">
+      <button class="nav-btn active" onclick="switchTab('sec-home')">
+        <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
+        Главная
+      </button>
+      <button class="nav-btn" onclick="switchTab('sec-builder')">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><path d="M12 8v8M8 12h8"></path></svg>
+        Оффер
+      </button>
+      <button class="nav-btn" onclick="switchTab('sec-profile')">
+        <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+        Профиль
+      </button>
+      <button class="nav-btn" onclick="switchTab('sec-style')">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        Стиль
+      </button>
+      <button class="nav-btn" id="nav-admin-btn" style="display:none;" onclick="switchTab('sec-admin')">
+        <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
+        Админ
+      </button>
+    </div>
+  </nav>
+</div>
+
+<script>
+/* ----------------------------------------------------
+   WEB AUDIO API SYNTHESIZER (NO EXTERNAL MP3)
+---------------------------------------------------- */
+let audioEnabled = true;
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audioCtx = null;
+
+function initAudio() {
+  if (!audioCtx) {
+    audioCtx = new AudioCtx();
+  }
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+}
+
+function triggerAudio(type) {
+  if (!audioEnabled) return;
+  try {
+    initAudio();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    const now = audioCtx.currentTime;
+
+    if (type === 'click') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(800, now);
+      osc.frequency.exponentialRampToValueAtTime(400, now + 0.05);
+      gain.gain.setValueAtTime(0.3, now);
+      gain.gain.linearRampToValueAtTime(0.01, now + 0.05);
+      osc.start(now);
+      osc.stop(now + 0.05);
+    } else if (type === 'tab') {
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(400, now);
+      osc.frequency.exponentialRampToValueAtTime(600, now + 0.08);
+      gain.gain.setValueAtTime(0.2, now);
+      gain.gain.linearRampToValueAtTime(0.01, now + 0.08);
+      osc.start(now);
+      osc.stop(now + 0.08);
+    } else if (type === 'success') {
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(523.25, now); // C5
+      osc.frequency.setValueAtTime(659.25, now + 0.08); // E5
+      osc.frequency.setValueAtTime(783.99, now + 0.16); // G5
+      gain.gain.setValueAtTime(0.15, now);
+      gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+      osc.start(now);
+      osc.stop(now + 0.25);
+    } else if (type === 'action') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(300, now);
+      osc.frequency.linearRampToValueAtTime(900, now + 0.12);
+      gain.gain.setValueAtTime(0.2, now);
+      gain.gain.linearRampToValueAtTime(0.01, now + 0.12);
+      osc.start(now);
+      osc.stop(now + 0.12);
+    }
+  } catch(e) {}
+}
+
+function toggleAudioState() {
+  audioEnabled = !audioEnabled;
+  document.getElementById('lbl-audio-state').textContent = audioEnabled ? 'ВКЛ' : 'ВЫКЛ';
+  document.getElementById('stat-sound').textContent = audioEnabled ? 'ON' : 'OFF';
+  toast(audioEnabled ? 'Звук включен' : 'Звук выключен');
+}
+
+/* ----------------------------------------------------
+   APP STATE & TELEGRAM INTEGRATION
+---------------------------------------------------- */
+const tg = window.Telegram?.WebApp;
+const ADMIN_ID = 123456789; // ← ЗАМЕНИ НА СВОЙ TELEGRAM ID
+const IS_ADMIN = tg?.initDataUnsafe?.user?.id === ADMIN_ID;
+
+let appState = {
+  bal: 1337,
+  isVip: true,
+  buttons: [
+    { id: 'btn_1', text: '⚡ БЫСТРЫЙ СТАРТ', anim: 'anim-pulse', pos: 'top', action: 'Старт системы выполнен!' },
+    { id: 'btn_2', text: '🔥 МЕГА БОНУС', anim: 'anim-rainbow', pos: 'center', action: 'Вы получили 100 ★!' },
+    { id: 'btn_3', text: '🚀 СВЕРХЗВУК', anim: 'anim-shake', pos: 'bottom', action: 'Режим сверхзвука активирован!' }
+  ],
+  siteTitle: 'ZERO-XAYRA',
+  bannerTitle: 'ГАРАНТ СДЕЛОК',
+  bannerDesc: 'Безопасный обмен NFT и юзернеймами. Бот выступает гарантом.'
+};
+
+/* ----------------------------------------------------
+   CANVAS MATRIX / PARTICLES BACKGROUND
+---------------------------------------------------- */
+function initBgCanvas() {
+  const canvas = document.getElementById('bg-canvas');
+  const ctx = canvas.getContext('2d');
+  let width = canvas.width = window.innerWidth;
+  let height = canvas.height = window.innerHeight;
+
+  window.addEventListener('resize', () => {
+    width = canvas.width = window.innerWidth;
+    height = canvas.height = window.innerHeight;
+  });
+
+  const particles = Array.from({ length: 35 }, () => ({
+    x: Math.random() * width,
+    y: Math.random() * height,
+    size: Math.random() * 3 + 1,
+    speedX: (Math.random() - 0.5) * 1.5,
+    speedY: (Math.random() - 0.5) * 1.5
+  }));
+
+  function render() {
+    ctx.clearRect(0, 0, width, height);
+    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--a').trim() || '#ff0033';
+
+    particles.forEach(p => {
+      p.x += p.speedX; p.y += p.speedY;
+      if (p.x < 0) p.x = width; if (p.x > width) p.x = 0;
+      if (p.y < 0) p.y = height; if (p.y > height) p.y = 0;
+
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    requestAnimationFrame(render);
+  }
+  render();
+}
+
+/* ----------------------------------------------------
+   UI CONTROLLERS
+---------------------------------------------------- */
+function toast(msg, icon = '⚡') {
+  const el = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  document.getElementById('toast-icon').textContent = icon;
+  el.classList.add('show');
+  triggerAudio('click');
+  setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+function switchTab(secId) {
+  triggerAudio('tab');
+  document.querySelectorAll('main section').forEach(s => s.classList.remove('active'));
+  document.getElementById(secId).classList.add('active');
+
+  const btnIndex = ['sec-home', 'sec-builder', 'sec-profile', 'sec-style', 'sec-admin'].indexOf(secId);
+  const navBtns = document.querySelectorAll('.nav-btn');
+  navBtns.forEach((b, idx) => b.classList.toggle('active', idx === btnIndex));
+}
+
+function setTheme(themeName) {
+  document.body.setAttribute('data-theme', themeName);
+  triggerAudio('success');
+  toast(`Тема: ${themeName.toUpperCase()}`);
+}
+
+function updateSpeed(val) {
+  document.documentElement.style.setProperty('--speed', val);
+  document.getElementById('speed-val').textContent = val;
+}
+
+function updateGlow(val) {
+  document.documentElement.style.setProperty('--glow-power', val);
+  document.getElementById('glow-val').textContent = val;
+}
+
+/* ----------------------------------------------------
+   BUTTON RENDER & BUILDER ENGINE
+---------------------------------------------------- */
+function renderButtons() {
+  const zTop = document.getElementById('zone-top');
+  const zCenter = document.getElementById('zone-center');
+  const zBottom = document.getElementById('zone-bottom');
+
+  if(!zTop || !zCenter || !zBottom) return;
+
+  zTop.innerHTML = ''; zCenter.innerHTML = ''; zBottom.innerHTML = '';
+
+  appState.buttons.forEach(btn => {
+    const el = document.createElement('button');
+    el.className = `cyber-btn full ${btn.anim}`;
+    el.textContent = btn.text;
+    el.onclick = () => {
+      triggerAudio('action');
+      toast(btn.action);
+    };
+
+    if (btn.pos === 'top') zTop.appendChild(el);
+    else if (btn.pos === 'bottom') zBottom.appendChild(el);
+    else zCenter.appendChild(el);
+  });
+
+  document.getElementById('stat-created').textContent = appState.buttons.length;
+}
+
+function createNewButton() {
+  const text = document.getElementById('b-text').value.trim();
+  const anim = document.getElementById('b-anim').value;
+  const pos = document.getElementById('b-pos').value;
+  const action = document.getElementById('b-action').value.trim() || 'Кнопка нажата!';
+
+  if (!text) {
+    toast('Введите текст кнопки!', '⚠️');
+    return;
+  }
+
+  const newBtn = {
+    id: 'btn_' + Date.now(),
+    text, anim, pos, action
+  };
+
+  appState.buttons.push(newBtn);
+  renderButtons();
+  triggerAudio('success');
+  toast('Кнопка успешно создана!');
+  document.getElementById('b-text').value = '';
+  switchTab('sec-home');
+}
+
+/* ----------------------------------------------------
+   PROFILE & BALANCE LOGIC
+---------------------------------------------------- */
+function addDemoBalance() {
+  appState.bal += 500;
+  document.getElementById('user-bal').textContent = appState.bal.toLocaleString();
+  triggerAudio('success');
+  toast('+500 ★ добавлено!');
+}
+
+function buyVip() {
+  if (appState.bal < 500) {
+    toast('Недостаточно звезд!', '❌');
+    return;
+  }
+  appState.bal -= 500;
+  appState.isVip = true;
+  document.getElementById('user-bal').textContent = appState.bal.toLocaleString();
+  document.getElementById('stat-status').textContent = 'VIP';
+  triggerAudio('success');
+  toast('VIP активирован!');
+}
+
+/* ----------------------------------------------------
+   OFFER CREATION (COMMANDS)
+---------------------------------------------------- */
+function createOffer() {
+  let name, amount;
+  const nameEl = document.getElementById('offer-name');
+  const amountEl = document.getElementById('offer-amount');
+  
+  if (nameEl && amountEl) {
+    name = nameEl.value.trim();
+    amount = amountEl.value.trim();
+  } else {
+    name = document.getElementById('offer-name-2').value.trim();
+    amount = document.getElementById('offer-amount-2').value.trim();
+  }
+
+  if (!name || !amount) {
+    toast('Заполни все поля!', '⚠️');
+    return;
+  }
+
+  const cmd = `/info ${name} ru ${amount} star`;
+  navigator.clipboard.writeText(cmd).then(() => {
+    toast('Команда скопирована! Вставь в бота.', '✅');
+    triggerAudio('success');
+  }).catch(() => {
+    toast('Ошибка копирования', '❌');
+  });
+}
+
+/* ----------------------------------------------------
+   ADMIN PANEL CONTROLLER
+---------------------------------------------------- */
+function saveAdminSettings() {
+  const t = document.getElementById('adm-title').value.trim();
+  const b = document.getElementById('adm-banner').value.trim();
+  const d = document.getElementById('adm-desc').value.trim();
+
+  if (t) {
+    appState.siteTitle = t;
+    document.getElementById('site-logo').textContent = t;
+  }
+  if (b) {
+    appState.bannerTitle = b;
+    document.getElementById('banner-title').textContent = b;
+  }
+  if (d) {
+    appState.bannerDesc = d;
+    document.getElementById('banner-desc').textContent = d;
+  }
+
+  triggerAudio('success');
+  toast('Настройки сохранены!');
+}
+
+/* ----------------------------------------------------
+   INITIALIZATION
+---------------------------------------------------- */
+window.addEventListener('DOMContentLoaded', () => {
+  if (tg) {
+    tg.ready();
+    tg.expand();
+    const u = tg.initDataUnsafe?.user;
+    if (u) {
+      document.getElementById('tg-name').textContent = `${u.first_name || ''} ${u.last_name || ''}`;
+      document.getElementById('tg-username').textContent = u.username ? `@${u.username}` : '@user';
+      document.getElementById('tg-id').textContent = `ID: ${u.id}`;
+      if (u.photo_url) {
+        document.getElementById('tg-avatar').style.backgroundImage = `url(${u.photo_url})`;
+      }
+    }
+  }
+
+  if (IS_ADMIN) {
+    document.getElementById('nav-admin-btn').style.display = 'flex';
+  }
+
+  initBgCanvas();
+  renderButtons();
+
+  setTimeout(() => {
+    const splash = document.getElementById('splash');
+    splash.style.opacity = '0';
+    setTimeout(() => splash.remove(), 400);
+  }, 1200);
+});
+</script>
+</body>
+</html>
